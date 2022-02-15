@@ -15,8 +15,8 @@
 package stream_test
 
 import (
+	"github.com/elgohr/go-stream/stream"
 	"github.com/stretchr/testify/require"
-	"go-stream/stream"
 	"io"
 	"io/ioutil"
 	"strings"

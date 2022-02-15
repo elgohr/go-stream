@@ -2,7 +2,7 @@ package stream
 
 import (
 	"fmt"
-	"go-stream/stream"
+	"github.com/elgohr/go-stream/stream"
 	"io/ioutil"
 	"log"
 	"strings"

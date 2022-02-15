@@ -16,8 +16,8 @@ package stream_test
 
 import (
 	"fmt"
+	"github.com/elgohr/go-stream/stream"
 	"github.com/stretchr/testify/require"
-	"go-stream/stream"
 	"io/ioutil"
 	"strings"
 	"testing"
