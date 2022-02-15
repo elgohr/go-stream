@@ -1,4 +1,4 @@
-module go-stream
+module github.com/elgohr/go-stream
 
 go 1.17
 
