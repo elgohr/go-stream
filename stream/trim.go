@@ -1,19 +1,20 @@
 package stream
 
 import (
-	"bufio"
 	"io"
 )
 
 // SuffixTrimmedReader trims the last suffixSize bytes from a stream
 type SuffixTrimmedReader struct {
-	reader     *bufio.Reader
+	buffer     []byte
+	reader     io.Reader
 	suffixSize int
 }
 
 func NewSuffixTrimmedReader(reader io.Reader, suffixSize int) io.Reader {
 	return &SuffixTrimmedReader{
-		reader:     bufio.NewReader(reader),
+		buffer:     []byte{},
+		reader:     reader,
 		suffixSize: suffixSize,
 	}
 }
@@ -23,14 +24,37 @@ func (r *SuffixTrimmedReader) Read(p []byte) (int, error) {
 		return r.reader.Read(p)
 	}
 
-	peekRead, err := r.reader.Peek(r.suffixSize * 2)
-	if err != nil {
-		suffixIndex := len(peekRead) - r.suffixSize
-		if suffixIndex < 0 {
-			return 0, err
-		}
-		return copy(p, peekRead[:suffixIndex]), err
+	bufferSize := len(p) + r.suffixSize
+	bufLen := len(r.buffer)
+
+	var err error
+
+	if openSlots := bufferSize - bufLen; openSlots > 0 {
+		add := make([]byte, openSlots)
+		var n int
+		n, err = r.reader.Read(add)
+		r.buffer = append(r.buffer, add[:n]...)
 	}
 
-	return io.LimitReader(r.reader, int64(r.suffixSize)).Read(p)
+	if err != nil {
+		var n int
+		if bufLen >= r.suffixSize {
+			n = copy(p, r.buffer[:bufLen-r.suffixSize])
+			if err == io.EOF {
+				if bufLen-n == r.suffixSize {
+					return n, io.EOF
+				}
+				return n, nil
+			}
+		}
+		return n, err
+	}
+
+	if bufLen == bufferSize {
+		n := copy(p, r.buffer[:bufLen-r.suffixSize])
+		r.buffer = r.buffer[n:]
+		return n, err
+	}
+
+	return 0, nil
 }

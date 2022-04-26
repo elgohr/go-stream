@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/elgohr/go-stream/stream"
 	"github.com/stretchr/testify/require"
+	"io"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -54,6 +55,11 @@ func TestTrimSuffix(t *testing.T) {
 			suffix:   3,
 			expected: "",
 		},
+		{
+			given:    "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+			suffix:   3,
+			expected: "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+		},
 	} {
 		t.Run(fmt.Sprintf("%s-%d-%s", scenario.given, scenario.suffix, scenario.expected), func(t *testing.T) {
 			reader := strings.NewReader(scenario.given)
@@ -64,5 +70,40 @@ func TestTrimSuffix(t *testing.T) {
 			require.Equal(t, 0, reader.Len())
 		})
 	}
+}
 
+func FuzzTrimSuffix(f *testing.F) {
+	f.Add(1, 3, "1234")
+	f.Fuzz(func(t *testing.T, i int, b int, s string) {
+		if b > 0 {
+			r := stream.NewSuffixTrimmedReader(strings.NewReader(s), i)
+			c, err := customReadAll(r, b)
+			require.NoError(t, err)
+			if i > len(s) {
+				require.Equal(t, "", string(c))
+			} else if i < 0 {
+				require.Equal(t, string(c), string(c))
+			} else {
+				require.Equal(t, s[:len(s)-i], string(c))
+			}
+		}
+	})
+}
+
+func customReadAll(r io.Reader, bufferSize int) ([]byte, error) {
+	b := make([]byte, 0, bufferSize)
+	for {
+		if len(b) == cap(b) {
+			// Add more capacity (let append pick how much).
+			b = append(b, 0)[:len(b)]
+		}
+		n, err := r.Read(b[len(b):cap(b)])
+		b = b[:len(b)+n]
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+			return b, err
+		}
+	}
 }
