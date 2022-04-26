@@ -61,3 +61,22 @@ func TestExtractSuffix(t *testing.T) {
 		})
 	}
 }
+
+func FuzzExtractSuffix(f *testing.F) {
+	f.Add(1, 3, "1a3!4")
+	f.Fuzz(func(t *testing.T, i int, b int, s string) {
+		if b > 0 {
+			r := stream.NewSuffixReader(strings.NewReader(s), i)
+			c, err := customReadAll(r, b)
+			require.NoError(t, err)
+			require.Equal(t, s, string(c))
+			if i < 0 {
+				require.Nil(t, r.Suffix())
+			} else if i <= len(s) {
+				require.Equal(t, s[len(s)-i:], string(r.Suffix()))
+			} else if i > len(s) {
+				require.Equal(t, s, string(r.Suffix()))
+			}
+		}
+	})
+}

@@ -26,9 +26,13 @@ type SuffixReader struct {
 }
 
 func NewSuffixReader(reader io.Reader, suffixSize int) *SuffixReader {
+	var buf []byte
+	if suffixSize > 0 {
+		buf = make([]byte, suffixSize)
+	}
 	return &SuffixReader{
 		reader:     reader,
-		suffix:     make([]byte, suffixSize),
+		suffix:     buf,
 		suffixSize: suffixSize,
 	}
 }
@@ -38,7 +42,9 @@ func (r *SuffixReader) Read(p []byte) (int, error) {
 	if r.suffixSize > 0 {
 		r.suffixSize -= n
 	}
-	r.suffix = append(r.suffix, p[:n]...)[n:]
+	if r.suffix != nil {
+		r.suffix = append(r.suffix, p[:n]...)[n:]
+	}
 	return n, err
 }
 
