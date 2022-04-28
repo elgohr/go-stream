@@ -73,19 +73,17 @@ func TestTrimSuffix(t *testing.T) {
 }
 
 func FuzzTrimSuffix(f *testing.F) {
-	f.Add(1, 3, "1234")
-	f.Fuzz(func(t *testing.T, i int, b int, s string) {
-		if b > 0 {
-			r := stream.NewSuffixTrimmedReader(strings.NewReader(s), i)
-			c, err := customReadAll(r, b)
-			require.NoError(t, err)
-			if i > len(s) {
-				require.Equal(t, "", string(c))
-			} else if i < 0 {
-				require.Equal(t, string(c), string(c))
-			} else {
-				require.Equal(t, s[:len(s)-i], string(c))
-			}
+	f.Add(1, uint(3), "12a!34")
+	f.Fuzz(func(t *testing.T, i int, b uint, s string) {
+		r := stream.NewSuffixTrimmedReader(strings.NewReader(s), i)
+		c, err := customReadAll(r, int(b))
+		require.NoError(t, err)
+		if i > len(s) {
+			require.Equal(t, "", string(c))
+		} else if i < 0 {
+			require.Equal(t, string(c), string(c))
+		} else {
+			require.Equal(t, s[:len(s)-i], string(c))
 		}
 	})
 }
@@ -94,14 +92,13 @@ func customReadAll(r io.Reader, bufferSize int) ([]byte, error) {
 	b := make([]byte, 0, bufferSize)
 	for {
 		if len(b) == cap(b) {
-			// Add more capacity (let append pick how much).
 			b = append(b, 0)[:len(b)]
 		}
 		n, err := r.Read(b[len(b):cap(b)])
 		b = b[:len(b)+n]
 		if err != nil {
 			if err == io.EOF {
-				err = nil
+				return b, nil
 			}
 			return b, err
 		}
