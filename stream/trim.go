@@ -39,17 +39,17 @@ func (r *SuffixTrimmedReader) Read(p []byte) (int, error) {
 	}
 
 	bufferSize := len(p) + r.suffixSize
-	bufLen := len(r.buffer)
 
 	var err error
 
-	if openSlots := bufferSize - bufLen; openSlots > 0 {
+	if openSlots := bufferSize - len(r.buffer); openSlots > 0 {
 		add := make([]byte, openSlots)
 		var n int
 		n, err = r.reader.Read(add)
 		r.buffer = append(r.buffer, add[:n]...)
 	}
 
+	bufLen := len(r.buffer)
 	if err != nil {
 		var n int
 		if bufLen >= r.suffixSize {

@@ -72,6 +72,19 @@ func TestTrimSuffix(t *testing.T) {
 	}
 }
 
+func TestTrimSuffixWithInstantClosingReader(t *testing.T) {
+	r := stream.NewSuffixTrimmedReader(instantClosingReader{}, 1)
+	c, err := ioutil.ReadAll(r)
+	require.NoError(t, err)
+	require.Equal(t, "TES", string(c))
+}
+
+type instantClosingReader struct{}
+
+func (i instantClosingReader) Read(p []byte) (n int, err error) {
+	return copy(p, "TEST"), io.EOF
+}
+
 func FuzzTrimSuffix(f *testing.F) {
 	f.Add(1, uint(3), "12a!34")
 	f.Fuzz(func(t *testing.T, i int, b uint, s string) {
